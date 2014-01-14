@@ -51,6 +51,9 @@ def createDaemon(choice):
         return
 
 def log_it(logdata=None):
+    """
+    Function to log the process into a file named bloomhack.log
+    """
     with open("bloomhack.log", "a") as fp:
         fp.write(logdata)
     return
@@ -131,5 +134,5 @@ if __name__=='__main__':
     if len(sys.argv) == 2:
         createDaemon(sys.argv[1])
     else:
-    	print "Wrong parameter."
+        print "Wrong parameter."
 
