@@ -23,6 +23,13 @@ db = client.database
 posts = db.posts
 
 def createDaemon(choice):
+    """
+    Daemon controller
+    :kwarg: choice: options to control the daemon
+    acceptable value of choice are:
+     *start
+     *stop
+    """
     if choice == 'start':
         try:
             pid = os.fork()
@@ -41,6 +48,12 @@ def createDaemon(choice):
         print "Daemon killed succesfully"
     else:
         print "Wrong parameter."
+        return
+
+def log_it(logdata=None):
+    with open("bloomhack.log", "a") as fp:
+        fp.write(logdata)
+    return
 
 def store_it(date=None, url=None):
     """
@@ -67,12 +80,10 @@ def store_it(date=None, url=None):
             }
         # Inserting the data to the database
         posts.insert(data)
-        with open("bloomhack.log", "a") as fp:
-            fp.write("{0}  Inserted article: {1}\n".format(datetime.datetime.now(), soup.title.text.encode('ascii', 'ignore')))
+        log_it("{0}  Inserted article: {1}\n".format(datetime.datetime.now(), soup.title.text.encode('ascii', 'ignore')))
     else:
         # If any error occurs(generally it doesn't occur like if the link was wrong or it was redirecting to 404) it prints below
-        with open("bloomhack.log", "a") as fp:
-            fp.write("{0}  Error while processing".format(datetime.datetime.now()))
+        log_it("{0}  Error while processing".format(datetime.datetime.now()))
 
 def scrap(date=None):
     """
@@ -93,10 +104,8 @@ def scrap(date=None):
         # Function call to store the link contents
         if storylinks:
             for story in storylinks:
-                store_it(date, story)
-        
+                store_it(date, story)        
         return 1
-    
     # Set flag to -1 when there is no posts available(i.e. status code is 408) in the archive or
     # it already stored all the articles from bloomberg
     else: 
@@ -111,8 +120,7 @@ def main():
         date = datetime.date.today().strftime("%Y-%m-%d")
         while flag is 1:
             flag = scrap(date)
-            with open("bloomhack.log", "a") as fp:
-            	fp.write("{0}  Stored all the articles of: {1}\n".format(datetime.datetime.now(), date))
+            log_it("{0}  Stored all the articles of: {1}\n".format(datetime.datetime.now(), date))
             date = date - datetime.timedelta(1)
         if flag is -1:
             createDaemon("stop")
