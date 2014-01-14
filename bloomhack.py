@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 # Later when more option will be needed we will use option parser
 # Like it will be a long process so we can implement daemon mode or
@@ -20,6 +21,26 @@ flag = 1
 client = MongoClient()
 db = client.database
 posts = db.posts
+
+def createDaemon(choice):
+    if choice == 'start':
+        try:
+            pid = os.fork()
+            if pid > 0:
+               print 'PID: %s Daemon started successfully' % pid
+               with open('pidinfo', 'w') as piddata:
+                   piddata.write("%d" %pid)
+               os._exit(0)
+        except OSError, error:
+            print 'Unable to fork. Error: %d (%s)' % (error.errno, error.strerror)
+            os._exit(1)
+        main()
+    elif choice == 'stop':
+        with open('pidinfo', 'r') as pid:
+            os.kill(int(pid.read()), 15)
+        print "Daemon killed succesfully"
+    else:
+        print "Wrong parameter."
 
 def store_it(date=None, url=None):
     """
@@ -46,10 +67,12 @@ def store_it(date=None, url=None):
             }
         # Inserting the data to the database
         posts.insert(data)
-        print "Inserted article: ", soup.title.text
+        with open("bloomhack.log", "a") as fp:
+            fp.write("{0}  Inserted article: {1}\n".format(datetime.datetime.now(), soup.title.text.encode('ascii', 'ignore')))
     else:
         # If any error occurs(generally it doesn't occur like if the link was wrong or it was redirecting to 404) it prints below
-        print "Http error: ", response.status_code
+        with open("bloomhack.log", "a") as fp:
+            fp.write("{0}  Error while processing".format(datetime.datetime.now()))
 
 def scrap(date=None):
     """
@@ -86,11 +109,17 @@ def main():
         date = datetime.date.today().strftime("%Y-%m-%d")
         while flag is 1:
             flag = scrap(date)
-            print "Stored all the articles of: ", date
+            with open("bloomhack.log", "a") as fp:
+            	fp.write("{0}  Stored all the articles of: {1}\n".format(datetime.datetime.now(), date))
             date = date - datetime.timedelta(1)
+        if flag is -1:
+            createDaemon("stop")
     except KeyboardInterrupt:
-        sys.exit(0)
+        createDaemon("stop")
 
 if __name__=='__main__':
-    main()
+    if len(sys.argv) == 2:
+        createDaemon(sys.argv[1])
+    else:
+    	print "Wrong parameter."
 
