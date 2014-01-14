@@ -91,8 +91,10 @@ def scrap(date=None):
             storylinks = [ story.a.get("href") for story in story_list.findAll("li") ]
         
         # Function call to store the link contents
-        for story in storylinks:
-            store_it(date, story)
+        if storylinks:
+            for story in storylinks:
+                store_it(date, story)
+        
         return 1
     
     # Set flag to -1 when there is no posts available(i.e. status code is 408) in the archive or
